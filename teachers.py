@@ -2,6 +2,28 @@ import torch
 import torch.nn as nn
 from torchvision.models import resnet18
 
+class DomainSpecificBatchNorm2d(nn.Module):
+    """Separate BatchNorm statistics for each domain/modality"""
+    def __init__(self, num_features, num_domains=3, eps=1e-5, momentum=0.1):
+        super().__init__()
+        self.num_domains = num_domains
+        self.num_features = num_features
+        
+        # Create separate BN for each domain
+        self.bns = nn.ModuleList([
+            nn.BatchNorm2d(num_features, eps=eps, momentum=momentum)
+            for _ in range(num_domains)
+        ])
+    
+    def forward(self, x, domain_id):
+        """
+        x: input tensor [B, C, H, W]
+        domain_id: scalar indicating which domain (0, 1, or 2)
+        """
+        return self.bns[domain_id](x)
+
+
+
 class ChannelAdapter(nn.Module):
     """
     Learnable channel projection:
